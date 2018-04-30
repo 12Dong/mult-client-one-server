@@ -1,10 +1,12 @@
 package server;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class server {
+    static             int count = 0;
     static class ReadThread extends Thread{
         Socket socket = null;
         ReadThread(Socket socket){
@@ -12,47 +14,52 @@ public class server {
         }
         @Override
         public void run() {
-            String clientMessage = null;
+            InputStream is = null;
+            InputStreamReader isr = null;
+            BufferedReader br = null;
+            OutputStream os  = null;
+            PrintWriter pw =null;
             try{
-                InputStream is = socket.getInputStream();
-                InputStreamReader isr = new InputStreamReader(is);
-                BufferedReader br = new BufferedReader(isr);
-                while(!(clientMessage=br.readLine()).equals("bye")){
-                    System.out.println("clientMessage:"+br);
+                is = socket.getInputStream();
+                isr = new InputStreamReader(is);
+                br = new BufferedReader(isr);
+                String info = null;
+                while((info=br.readLine())!=null){
+                    System.out.println("Client"+socket.getInetAddress()+":"+info);
                 }
-
-            }catch(Exception e){
-                e.printStackTrace();
-            }
-        }
-    }
-
-    static class SendThread extends Thread{
-        PrintWriter pw = null;
-
-        SendThread(Socket socket){
-            try{
-                OutputStream os = socket.getOutputStream();
+                socket.shutdownInput();
+                os = socket.getOutputStream();
                 pw = new PrintWriter(os);
+                pw.write("欢迎你!");
+                pw.flush();
             }catch(Exception e){
                 e.printStackTrace();
-            }
-        }
-        @Override
-        public void run() {
-            try{
-                String sendMessage = null;
-                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-                sendMessage = br.readLine();
-                while(!sendMessage.equals("bye")){
-                    pw.write(sendMessage);
-                    pw.flush();
+            }finally{
+                System.out.println(socket.getInetAddress()+"线程结束");
+                try{
+                    if(pw!=null){
+                        pw.close();
+                    }
+                    if(os!=null){
+                        os.close();
+                    }
+                    if(is!=null){
+                        is.close();
+                    }
+                    if(isr!=null){
+                        isr.close();
+                    }
+                    if(socket!=null){
+                        socket.close();
+                    }
+                }catch(IOException e){
+                    e.printStackTrace();
                 }
-            }catch(Exception e){
-                e.printStackTrace();
+                count--;
             }
         }
     }
+
     public static void main(String argv[]){
         try{
 /**
@@ -61,18 +68,17 @@ public class server {
 //1、创建一个服务器端Socket，即ServerSocket，指定绑定的端口，并监听此端口
             ServerSocket serverSocket =new ServerSocket(10086);//1024-65535的某个端口
 //2、调用accept()方法开始监听，等待客户端的连接
-            Socket socket = serverSocket.accept();
-            System.out.println(socket);
-            ReadThread readThread = new ReadThread(socket);
-            SendThread sendThread = new SendThread(socket);
-//3、获取输入流，并读取客户端信息
-            readThread.start();
-            sendThread.start();
-            sendThread.join();
-
-//5、关闭资源
-            socket.close();
-            serverSocket.close();
+            Socket socket = null;
+            System.out.println("服务器启动,等待连接");
+            while(true){
+                socket = serverSocket.accept();
+                ReadThread readThread = new ReadThread(socket);
+                readThread.start();
+                count++;
+                System.out.println("已连接数量:"+count);
+                InetAddress address = socket.getInetAddress();
+                System.out.println("当前client的IP: "+address.getHostAddress());
+            }
         }catch(Exception e){
             e.printStackTrace();
         }finally{
