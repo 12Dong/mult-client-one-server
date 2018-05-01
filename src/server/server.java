@@ -6,15 +6,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.Scanner;
+import java.util.Vector;
 
 public class server {
-    static LinkedList<Socket> list = new LinkedList<>();
+    static Vector<Socket> vector = new Vector<>();
     static             int count = 0;
     static class ReadThread extends Thread{
         Socket socket = null;
         ReadThread(Socket socket){
             this.socket = socket;
-            list.add(socket);
+            vector.add(socket);
         }
         @Override
         public void run() {
@@ -60,7 +61,7 @@ public class server {
                     e.printStackTrace();
                 }
                 count--;
-                list.remove(socket);
+                vector.remove(socket);
             }
         }
     }
