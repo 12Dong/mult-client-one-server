@@ -72,14 +72,20 @@ public class server {
 
         @Override
         public void run() {
+            System.out.println("广播线程已准备好,随时待命");
             String serverMessage = null;
             Scanner scanner = new Scanner(System.in);
             String sendMessage = scanner.next();
-            while (sendMessage.equals("bye")) {
+            while (!sendMessage.equals("bye")) {
+                if(list.size()==0){
+                    System.out.println("当前没有客户端接入");
+                    continue;
+                }
                 try {
                     for (Socket socket : list) {
                         Writer writer = new OutputStreamWriter(socket.getOutputStream(), "UTF-8");
                         writer.write(sendMessage);
+                        writer.write("\n");
                         writer.flush();
                         System.out.println("广播:" + sendMessage);
                     }
@@ -103,12 +109,13 @@ public class server {
 //2、调用accept()方法开始监听，等待客户端的连接
             Socket socket = null;
             System.out.println("服务器启动,等待连接");
+            SendThread sendThread = new SendThread();
+            sendThread.start();
+
             while(true){
                 socket = serverSocket.accept();
                 ReadThread readThread = new ReadThread(socket);
                 readThread.start();
-                SendThread sendThread = new SendThread();
-                sendThread.start();
                 count++;
                 System.out.println("已连接数量:"+count);
                 InetAddress address = socket.getInetAddress();
