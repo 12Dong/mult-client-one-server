@@ -19,7 +19,7 @@ public class client1 {
                 InputStream is = socket.getInputStream();
                 InputStreamReader isr = new InputStreamReader(is);
                 BufferedReader br = new BufferedReader(isr);
-                while(!(serverMessage=br.readLine()).equals("bye")){
+                while((serverMessage=br.readLine())!=null){
                     System.out.println("server:"+serverMessage);
                 }
             }catch(Exception e){
@@ -50,6 +50,8 @@ public class client1 {
             Socket socket = new Socket(ip,10086);
             Writer writer=null;
             //2、获取输出流,向server发送信息
+            ReadThread readThread = new ReadThread(socket);
+            readThread.start();
             try{
                 // 建立连接后就可以往服务端写数据了
                 if(writer == null) {
@@ -73,16 +75,6 @@ public class client1 {
                     e.printStackTrace();
                 }
             }
-            InputStream is = socket.getInputStream();
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-
-            String info = null;
-            //循环读取
-            while ((info = br.readLine()) != null){
-                System.out.println("我是client:server说:" + info);
-            }
-            br.close();
 
             socket.close();
         } catch (IOException e) {

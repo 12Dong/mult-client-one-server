@@ -4,13 +4,17 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
+import java.util.Scanner;
 
 public class server {
+    static LinkedList<Socket> list = new LinkedList<>();
     static             int count = 0;
     static class ReadThread extends Thread{
         Socket socket = null;
         ReadThread(Socket socket){
             this.socket = socket;
+            list.add(socket);
         }
         @Override
         public void run() {
@@ -30,7 +34,7 @@ public class server {
                 socket.shutdownInput();
                 os = socket.getOutputStream();
                 pw = new PrintWriter(os);
-                pw.write("欢迎你!");
+                pw.write("结束通信!");
                 pw.flush();
             }catch(Exception e){
                 e.printStackTrace();
@@ -56,7 +60,36 @@ public class server {
                     e.printStackTrace();
                 }
                 count--;
+                list.remove(socket);
             }
+        }
+    }
+
+    static class SendThread extends Thread {
+
+        public SendThread() {
+        }
+
+        @Override
+        public void run() {
+            String serverMessage = null;
+            Scanner scanner = new Scanner(System.in);
+            String sendMessage = scanner.next();
+            while (sendMessage.equals("bye")) {
+                try {
+                    for (Socket socket : list) {
+                        Writer writer = new OutputStreamWriter(socket.getOutputStream(), "UTF-8");
+                        writer.write(sendMessage);
+                        writer.flush();
+                        System.out.println("广播:" + sendMessage);
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                sendMessage = scanner.next();
+            }
+
         }
     }
 
@@ -74,6 +107,8 @@ public class server {
                 socket = serverSocket.accept();
                 ReadThread readThread = new ReadThread(socket);
                 readThread.start();
+                SendThread sendThread = new SendThread();
+                sendThread.start();
                 count++;
                 System.out.println("已连接数量:"+count);
                 InetAddress address = socket.getInetAddress();
